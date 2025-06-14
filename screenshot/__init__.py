@@ -1,0 +1,1 @@
+from screenshot.iscreenshot_service import IScreenshotService, ScreenshotService

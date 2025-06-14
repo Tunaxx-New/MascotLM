@@ -1,0 +1,236 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Live2D Viewer</title>
+    <style>
+        html, body {
+            margin: 0;
+            padding: 0;
+            overflow: hidden;
+            height: 100%;
+            width: 100%;
+            background: transparent !important;
+        }
+
+        canvas {
+            background: transparent !important;
+        }
+
+        html, body, canvas {
+            pointer-events: auto;
+        }
+    </style>
+</head>
+<body>
+<script src="/static/js/pixi.min.js"></script>
+<script src="/static/js/live2dcubismcore.min.js"></script>
+<script src="/static/js/cubism4.min.js"></script>
+<script src="qrc:///qtwebchannel/qwebchannel.js"></script>
+<script>
+    const app = new PIXI.Application({
+        resizeTo: window,
+        transparent: true,
+        backgroundAlpha: 1
+    });
+    document.body.appendChild(app.view);
+    app.view.style.width = '100%';
+    app.view.style.height = '100%';
+
+    app.stage.interactive = true;
+    let model_ = undefined
+    let current_expression = 'sleepy'
+    PIXI.live2d.Live2DModel.from('/static/model/koharu.model3.json')
+        .then(model => {
+            model_ = model
+            model.expression(current_expression);
+            const naturalWidth = model.width;
+            const naturalHeight = model.height;
+            const scale = window.innerHeight / naturalHeight;
+            model.scale.set(scale);
+
+            model.anchor = {
+                x: 0.5,
+                y: 1
+            };
+
+            model.x = window.innerWidth / 2 - model.width / 2;
+            model.y = window.innerHeight - model.height;
+
+            const pinIcon = new PIXI.Graphics();
+            pinIcon.beginFill(0xffcc00); // gold color
+            pinIcon.drawCircle(model.width * 5, model.height, 128); // 🔴 increase radius here (e.g., 16px)
+            pinIcon.endFill();
+
+            // Position in top-left of the model
+            pinIcon.visible = false;
+            model.addChild(pinIcon);
+
+            app.stage.addChild(model);
+
+            // === Tap event ===
+            app.view.addEventListener('click', () => {
+                model.motion('Tap');
+            });
+
+            // Listen for click only on model
+            model.on('pointertap', (event) => {
+                const local = event.data.getLocalPosition(model);
+                const halfHeight = model.height / model.scale.y / 2;
+
+                if (local.y < halfHeight) {
+                    model.motion('Tambourine');
+                } else {
+                    model.motion('Awkward');
+                }
+            });
+
+            let isPinned = true;
+            let velocityY = 0;
+            const gravity = 0.1; // adjust gravity strength
+            const groundY = window.innerHeight - model.height; // "floor" position
+
+            model.interactive = true;
+            model.buttonMode = true;
+
+            let isDragging = false;
+            let dragOffset = {x: 0, y: 0};
+            let clickCount = 0;
+            let clickTimer = null;
+
+            // Drag to pin
+            model.on('pointerdown', (event) => {
+                window.dragDisabled = true;
+                clickCount++;
+
+                if (clickCount === 1) {
+                    // Start timer to reset count if second click doesn't come quickly
+                    clickTimer = setTimeout(() => {
+                        clickCount = 0;
+                    }, 300); // 300ms threshold for double-click
+                }
+
+                if (clickCount === 2) {
+                    clearTimeout(clickTimer);
+                    clickCount = 0;
+                    isPinned = !isPinned;
+
+                    if (isPinned) {
+                        model.expression('pin');
+                        pinIcon.visible = true;
+                    } else {
+                        model.expression(current_expression);
+                        pinIcon.visible = false;
+                    }
+                    console.log(`Pinned: ${isPinned}`);
+                }
+
+                velocityY = 0;
+                isDragging = true;
+                dragOffset = {
+                    x: event.data.global.x - model.x,
+                    y: event.data.global.y - model.y,
+                };
+            });
+
+            // When moving mouse/finger
+            app.stage.on('pointermove', (event) => {
+                if (isDragging && !isPinned) {
+                    const newX = event.data.global.x - dragOffset.x;
+                    const newY = event.data.global.y - dragOffset.y;
+                }
+            });
+
+            // When releasing mouse/finger
+            app.stage.on('pointerup', () => {
+                isDragging = false;
+                window.dragDisabled = true;
+            });
+
+            app.stage.on('pointerupoutside', () => {
+                isDragging = false;
+            });
+
+            // Gravity simulation
+            app.ticker.add(() => {
+                if (!isPinned && !isDragging) {
+                    velocityY += gravity;
+                    model.y += velocityY;
+
+                    // Stop at "ground"
+                    if (model.y > groundY) {
+                        model.y = groundY;
+                        velocityY = 0;
+                    }
+                }
+            });
+
+            pinIcon.on('pointertap', () => {
+                isPinned = !isPinned; // toggle pin state
+                console.log(isPinned ? 'Pinned' : 'Unpinned');
+            });
+            app.ticker.add(() => {
+                // Keep pin icon aligned to top-right
+                pinIcon.x = model.width;
+            });
+        });
+
+    window.addEventListener('resize', () => {
+        app.renderer.resize(window.innerWidth, window.innerHeight);
+        const naturalWidth = model.width;
+        const naturalHeight = model.height;
+        const scale = window.innerHeight / naturalHeight;
+        model.scale.set(scale);
+    });
+</script>
+<script src="/static/js/qwebchannel.min.js"></script>
+<script type="text/javascript">
+    // Defer until Qt injects the object
+    window.addEventListener('DOMContentLoaded', function () {
+        {
+            if (typeof qt === 'undefined') {
+                {
+                    console.error("qt object not found. Make sure PyQt5 is injecting the channel.");
+                    return;
+                }
+            }
+            new QWebChannel(qt.webChannelTransport, function (channel) {
+                {
+                    const bridge = channel.objects.pyBridge;
+                    let dragging = false;
+                    let lastX = 0, lastY = 0;
+
+                    document.addEventListener("mousedown", function (e) {
+                        {
+                            dragging = true;
+                            lastX = e.screenX;
+                            lastY = e.screenY;
+                        }
+                    });
+
+                    document.addEventListener("mousemove", function (e) {
+                        {
+                            if (dragging) {
+                                {
+                                    let dx = e.screenX - lastX;
+                                    let dy = e.screenY - lastY;
+                                    lastX = e.screenX;
+                                    lastY = e.screenY;
+                                    bridge.drag(dx, dy);
+                                }
+                            }
+                        }
+                    });
+
+                    document.addEventListener("mouseup", function () {
+                        {
+                            dragging = false;
+                        }
+                    });
+                }
+            });
+        }
+    });
+</script>
+</body>
+</html>

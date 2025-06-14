@@ -1,0 +1,82 @@
+{
+  "Version": 3,
+  "FileReferences": {
+    "Moc": "koharu.moc3",
+    "Textures": [
+      "koharu.2048/texture_00.png"
+    ],
+    "Physics": "koharu.physics3.json",
+    "Pose": "koharu.pose3.json",
+    "DisplayInfo": "koharu.cdi3.json",
+    "Expressions": [
+      {
+        "Name": "pin",
+        "File": "pin.exp3.json"
+      },
+      {
+        "Name": "neutral",
+        "File": "neutral.exp3.json"
+      },
+      {
+        "Name": "sleepy",
+        "File": "sleepy.exp3.json"
+      }
+    ],
+    "Motions": {
+      "Awkward": [
+        {
+          "File": "motion/01.motion3.json"
+        }
+      ],
+      "SadDown": [
+        {
+          "File": "motion/02.motion3.json"
+        }
+      ],
+      "SadArm": [
+        {
+          "File": "motion/03.motion3.json"
+        }
+      ],
+      "Cry": [
+        {
+          "File": "motion/05.motion3.json"
+        }
+      ],
+      "Dance": [
+        {
+          "File": "motion/04.motion3.json"
+        }
+      ],
+      "WarmUp": [
+        {
+          "File": "motion/06.motion3.json"
+        }
+      ],
+      "Idle": [
+        {
+          "File": "motion/idle.motion3.json"
+        },
+        {
+          "File": "motion/idle_02.motion3.json"
+        }
+      ],
+      "Support": [
+        {
+          "File": "motion/07.motion3.json"
+        }
+      ],
+      "SupportBite": [
+        {
+          "File": "motion/08.motion3.json"
+        }
+      ],
+      "Tambourine": [
+        {
+          "File": "motion/09.motion3.json"
+        }
+      ]
+    }
+  },
+  "HitAreas": []
+}

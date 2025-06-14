@@ -1,0 +1,1 @@
+from translate.google_translate_service import ITranslateService, GoogleTranslateService
